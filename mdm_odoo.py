@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from xmlrpc import client as xmlrpclib
 from fastapi.middleware.cors import CORSMiddleware
+from sql import ConnexionOdoo
+from datetime import datetime
 
 origins = [
     "http://localhost.tiangolo.com",
@@ -18,6 +20,7 @@ password = "4g$1040"
 models = xmlrpclib.ServerProxy("{}/xmlrpc/2/object".format(url))
 common = xmlrpclib.ServerProxy("{}/xmlrpc/2/common".format(url))
 uid = common.authenticate(dbo, username, password, {})
+
 
 app = FastAPI()
 
@@ -60,7 +63,17 @@ def productExist(code):
         return [False, 0]
 
 
-def addSaleOrder(pricelist_id, partner_id, partner_shipping_id):
+def addSaleOrder(pricelist_id, partner_id, partner_shipping_id, warehouseId):
+    ir_sequence = models.execute_kw(
+        dbo,
+        uid,
+        password,
+        "ir.sequence",
+        "next_by_id",
+        [7473],
+        {},
+    )
+
     product = models.execute_kw(
         dbo,
         uid,
@@ -75,7 +88,7 @@ def addSaleOrder(pricelist_id, partner_id, partner_shipping_id):
                 "pricelist_id": pricelist_id,
                 "partner_invoice_id": partner_id,
                 "create_uid": 772,
-                "name": "DC_22_00019/22",
+                "name": ir_sequence,
                 "partner_shipping_id": partner_shipping_id,
                 "order_policy": "picking",
                 "picking_policy": "direct",
@@ -116,6 +129,7 @@ def home():
 
 @app.post("/commande-ouvrant")
 def ouvrant(items: list):
+    print(items)
     product_names = []
     product_temp_info = []
     for item in items:
@@ -131,9 +145,29 @@ def ouvrant(items: list):
                 ),
             }
             return {"error": error}
-    commande_id = addSaleOrder(1, 8, 8)
+    commande_id = addSaleOrder(
+        1, items[0]["client"], items[0]["client"], items[0]["warehouse"]
+    )
     i = 0
     for item in items:
         addSaleOrderLine(item, commande_id, product_names[i], product_temp_info[i])
         i += 1
     return {"success": 201}
+
+
+@app.get("/get-warehouse")
+def getCompany(name: str):
+    warhouse_name = ConnexionOdoo.getWarehouses(ConnexionOdoo, name)
+    final_warehouses_names = []
+    for warehouse in warhouse_name:
+        final_warehouses_names.append({"label": warehouse[1], "value": warehouse[0]})
+    return final_warehouses_names
+
+
+@app.get("/get-companny")
+def getCompany(name: str):
+    company_name = ConnexionOdoo.getCompanies(ConnexionOdoo, name)
+    final_company_names = []
+    for company in company_name:
+        final_company_names.append({"label": company[1], "value": company[0]})
+    return final_company_names
