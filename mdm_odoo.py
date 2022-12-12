@@ -63,7 +63,15 @@ def productExist(code):
         return [False, 0]
 
 
-def addSaleOrder(pricelist_id, partner_id, partner_shipping_id, warehouseId):
+def addSaleOrder(
+    pricelist_id,
+    partner_id,
+    partner_shipping_id,
+    warehouseId,
+    addressFacturationID,
+    addressDeLivraisonID,
+    compteAnalytique,
+):
     ir_sequence = models.execute_kw(
         dbo,
         uid,
@@ -92,7 +100,10 @@ def addSaleOrder(pricelist_id, partner_id, partner_shipping_id, warehouseId):
                 "partner_shipping_id": partner_shipping_id,
                 "order_policy": "picking",
                 "picking_policy": "direct",
-                "warehouse_id": 10,
+                "warehouse_id": warehouseId,
+                "partner_invoice_id": addressFacturationID,
+                "partner_shipping_id": addressDeLivraisonID,
+                "project_id": compteAnalytique,
             }
         ],
     )
@@ -100,7 +111,9 @@ def addSaleOrder(pricelist_id, partner_id, partner_shipping_id, warehouseId):
     return product
 
 
-def addSaleOrderLine(item, commande_id, product_name, product_temp_info):
+def addSaleOrderLine(
+    item, commande_id, product_name, product_temp_info, addressFacturationID
+):
     models.execute_kw(
         dbo,
         uid,
@@ -117,6 +130,7 @@ def addSaleOrderLine(item, commande_id, product_name, product_temp_info):
                 "delay": 0,
                 "state": "draft",
                 "order_id": commande_id,
+                "order_partner_id": addressFacturationID,
             }
         ],
     )
@@ -146,11 +160,23 @@ def ouvrant(items: list):
             }
             return {"error": error}
     commande_id = addSaleOrder(
-        1, items[0]["client"], items[0]["client"], items[0]["warehouse"]
+        1,
+        items[0]["client"],
+        items[0]["client"],
+        items[0]["warehouse"],
+        items[0]["addressFacturation"],
+        items[0]["addressDeLivraison"],
+        items[0]["compteAnalytique"],
     )
     i = 0
     for item in items:
-        addSaleOrderLine(item, commande_id, product_names[i], product_temp_info[i])
+        addSaleOrderLine(
+            item,
+            commande_id,
+            product_names[i],
+            product_temp_info[i],
+            items[0]["addressFacturation"],
+        )
         i += 1
     return {"success": 201}
 
@@ -164,10 +190,36 @@ def getCompany(name: str):
     return final_warehouses_names
 
 
+@app.get("/get-address")
+def getAddress(address: str, type: str, parent_id: int):
+    warhouse_name = ConnexionOdoo.getAddressFacturationOULivraison(
+        ConnexionOdoo, address, parent_id, type
+    )
+    final_warehouses_names = []
+    for warehouse in warhouse_name:
+        final_warehouses_names.append({"label": warehouse[1], "value": warehouse[0]})
+    return final_warehouses_names
+
+
 @app.get("/get-companny")
 def getCompany(name: str):
     company_name = ConnexionOdoo.getCompanies(ConnexionOdoo, name)
     final_company_names = []
     for company in company_name:
         final_company_names.append({"label": company[1], "value": company[0]})
+    print(final_company_names)
     return final_company_names
+
+
+@app.get("/get-compteAnalytique")
+def getCompany(contratAnalytique: str):
+    compte_analytiques = ConnexionOdoo.getCompteAnalytique(
+        ConnexionOdoo, contratAnalytique
+    )
+    final_comptes_analytiques = []
+    for compte_analytique in compte_analytiques:
+        final_comptes_analytiques.append(
+            {"label": compte_analytique[1], "value": compte_analytique[0]}
+        )
+    print(final_comptes_analytiques)
+    return final_comptes_analytiques

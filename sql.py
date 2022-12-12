@@ -15,7 +15,7 @@ class ConnexionOdoo:
         cursor = self.connect()
         cursor.execute(
             """SELECT id,name
-                from res_company rc 
+                from res_partner rc 
                 where 
                 rc.name LIKE '%"""
             + company_name.upper()
@@ -34,6 +34,40 @@ class ConnexionOdoo:
                 company_id IN (14) AND
                 sw.name LIKE '%"""
             + warehouse_name.upper()
+            + """%' limit 5"""
+        )
+
+        records = cursor.fetchall()
+        cursor.close()
+        return records
+
+    def getAddressFacturationOULivraison(self, adress, parent_id, type):
+        cursor = self.connect()
+        cursor.execute(
+            """select id,name 
+               from res_partner rp 
+               where parent_id = """
+            + str(parent_id)
+            + """
+               and type = '"""
+            + type
+            + """' AND
+                rp.name LIKE '%"""
+            + adress.upper()
+            + """%' limit 5"""
+        )
+
+        records = cursor.fetchall()
+        cursor.close()
+        return records
+
+    def getCompteAnalytique(self, contrat_analytique):
+        cursor = self.connect()
+        cursor.execute(
+            """select id,code  
+                from account_analytic_account aaa 
+                where aaa.code  LIKE '%"""
+            + contrat_analytique.upper()
             + """%' limit 5"""
         )
 
