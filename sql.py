@@ -43,13 +43,29 @@ class ConnexionOdoo:
 
     def getAddressFacturationOULivraison(self, adress, parent_id, type):
         cursor = self.connect()
+        query = (
+            """select id,name 
+               from res_partner rp 
+             where parent_id = 
+             """
+            + str(parent_id)
+            + """
+               and type = '
+               """
+            + type
+            + """' 
+               AND rp.name LIKE '%
+               """
+            + adress.upper()
+            + """%' 
+               limit 5"""
+        )
+
         cursor.execute(
             """select id,name 
                from res_partner rp 
-               where parent_id = """
-            + str(parent_id)
-            + """
-               and type = '"""
+            
+             where type = '"""
             + type
             + """' AND
                 rp.name LIKE '%"""

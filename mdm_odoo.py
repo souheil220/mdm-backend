@@ -112,7 +112,12 @@ def addSaleOrder(
 
 
 def addSaleOrderLine(
-    item, commande_id, product_name, product_temp_info, addressFacturationID
+    item,
+    commande_id,
+    product_name,
+    product_temp_info,
+    addressFacturationID,
+    compteAnalytique,
 ):
     models.execute_kw(
         dbo,
@@ -124,13 +129,14 @@ def addSaleOrderLine(
             {
                 "product_uos_qty": int(item["quantite"]),
                 "product_uom": product_temp_info[0]["uom_id"][0],
-                "price_unit": 1000,
+                "price_unit": float(item["prixUnitaire"]),
                 "product_uom_qty": int(item["quantite"]),
                 "name": product_name,
                 "delay": 0,
                 "state": "draft",
                 "order_id": commande_id,
                 "order_partner_id": addressFacturationID,
+                "analytic_account_id": compteAnalytique,
             }
         ],
     )
@@ -176,6 +182,7 @@ def ouvrant(items: list):
             product_names[i],
             product_temp_info[i],
             items[0]["addressFacturation"],
+            items[0]["compteAnalytique"],
         )
         i += 1
     return {"success": 201}
